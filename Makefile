@@ -13,13 +13,17 @@ $(BIN)/server: $(SRC)/server.c $(INCLUDE)/messages.h
 client: $(BIN)/client  
 
 testRig: $(BIN)/testRig 
-	rm log/*
+	rm -rf log
+	mkdir log
 
-$(BIN)/testRig : server client 
-	gcc $(SRC)/testRig.c -o $(BIN)/testRig 
+$(BIN)/testRig : server client $(BIN)/fort.o
+	gcc $(SRC)/testRig.c $(BIN)/fort.o -o $(BIN)/testRig -I $(INCLUDE)
 
 $(BIN)/client: $(SRC)/client.c $(INCLUDE)/messages.h
 	gcc $(SRC)/client.c -o $(BIN)/client -I $(INCLUDE)
+
+$(BIN)/fort.o: $(SRC)/fort.c $(INCLUDE)/fort.h
+	gcc $(SRC)/fort.c -c -o $(BIN)/fort.o -I $(INCLUDE)
 
 clean: 
 	rm -rf $(BIN)/*

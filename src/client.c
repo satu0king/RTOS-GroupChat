@@ -7,9 +7,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <sys/time.h>
 
 #include "messages.h"
 
@@ -32,7 +32,7 @@ void killServer() {
     char response;
     scanf("%c", &response);
     if (response == 'Y' || response == 'y') {
-        // close(sd);
+        close(sd);
         if (mode == TEST) {
             close(logfileFD);
         }
@@ -69,6 +69,8 @@ void *connection_handler(void *nsd) {
                 receiveTime.tv_usec - sendTime.tv_usec;
             printf("Delay: %lu\n", delay);
             if (mode == TEST) {
+                // char log[100];
+                // sprintf(log, "%lu", delay);
                 write(logfileFD, &delay, sizeof(delay));
             }
         }
@@ -92,9 +94,9 @@ int main(int argc, char *argv[]) {
     if (argc >= 6) {
         if (!strcmp(argv[5], "TEST")) {
             mode = TEST;
-            
+
             logfileFD = open(argv[6], O_WRONLY | O_APPEND | O_CREAT, 0744);
-            if(logfileFD < 0) {
+            if (logfileFD < 0) {
                 perror("open\n");
                 exit(EXIT_FAILURE);
             }
