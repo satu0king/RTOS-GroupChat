@@ -8,69 +8,108 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include "chat.h"
 
-#define N 100
-int connections[N];
-int connectionCount = 0;
-int sd; 
+#include "messages.h"
 
-void killServer(){
-    printf("Closing Server\n");
-    close(sd);
-    exit(0);
+#define MAX_GROUPS 5
+#define MAX_GROUP_SIZE 200
+
+int connections[MAX_GROUPS][MAX_GROUP_SIZE];
+char groupNames[MAX_GROUPS][20];
+int connectionCount[MAX_GROUPS];
+int groupCount = 0;
+int sd;
+
+void killServer() {
+    printf(
+        "Are you sure you want to close the server ? All groups will be "
+        "deleted (Y/N) \n");
+    char response;
+    scanf("%c", &response);
+    if (response == 'Y' || response == 'y') {
+        printf("Closing Server\n");
+        for (int i = 0; i < groupCount; i++) {
+            for (int j = 0; j < connectionCount[i]; j++) {
+                close(connections[i][j]);
+            }
+        }
+        close(sd);
+        exit(EXIT_SUCCESS);
+    }
 }
 
-void handle_my(int sig){
-  switch (sig) {
-    case SIGINT:
-        killServer();
-        break;
-  }
-
+void handle_my(int sig) {
+    switch (sig) {
+        case SIGINT:
+            killServer();
+            break;
+    }
 }
-
-struct Connection {
-    int nsd;
-    int connectionId;
-};
 
 void *connection_handler(void *_connection) {
-    struct Connection *connection = (struct Connection *)_connection;
-
-    int nsfd = connection->nsd;
-    int connectionId = connection->connectionId;
+    int nsfd = *(int *)_connection;
 
     struct JoinRequest request;
     struct JoinResponse response;
     read(nsfd, &request, sizeof(request));
 
     char *name = request.name;
+    char *groupName = request.groupName;
 
-    response.id = connectionId;
+    int flag = 1;
+    int groupId;
+    int id;
+    for (int i = 0; i < groupCount; i++) {
+        if (!strcmp(groupName, groupNames[i])) {
+            groupId = i;
+            id = connectionCount[i]++;
+            connections[groupId][id] = nsfd;
+            flag = 0;
+            break;
+        }
+    }
+
+    if (flag) {
+        int i = groupCount++;
+        strcpy(groupNames[i], request.groupName);
+        groupId = i;
+        id = connectionCount[i]++;
+        connections[groupId][id] = nsfd;
+    }
+
+    response.id = id;
+    response.groupId = groupId;
+
     write(nsfd, &response, sizeof(response));
 
-    printf("Client %s joined the chat, ID assigned: %d\n", name, connectionId);
+    printf(
+        "Client %s joined the chat, ID assigned: %d, Group Id Assigned: %d\n",
+        name, response.id, response.groupId);
 
     struct Message message;
-    int i;
     while (read(nsfd, &message, sizeof(message))) {
-        for (i = 0; i < connectionCount; i++) {
-            if (~connections[i] && i != message.id) {
-                write(connections[i], &message, sizeof(message));
+        for (int i = 0; i < connectionCount[groupId]; i++) {
+            if (~connections[groupId][i] && i != message.id) {
+                write(connections[groupId][i], &message, sizeof(message));
             }
         }
     }
 
-    printf("%s with connection ID %d has left the chat\n", name, connectionId);
-    connections[connectionId] = -1;
-    free(connection);
+    printf("%s with connection ID %d has left the chat\n", name, id);
+    connections[groupId][id] = -1;
+    free(_connection);
     return NULL;
 }
 
-int main() {
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        printf("Usage: %s <port>", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    int port = atoi(argv[1]);
+
     signal(SIGINT, handle_my);
-    int nsd;
     socklen_t clientLen;
     pthread_t threads;
     struct sockaddr_in server, client;
@@ -79,12 +118,16 @@ int main() {
 
     server.sin_family = AF_INET;
     server.sin_addr.s_addr = htonl(INADDR_ANY);
-    server.sin_port = htons(5555);
+    server.sin_port = htons(port);
 
-    if(bind(sd, (struct sockaddr *)&server, sizeof(server)) < 0) {
-        perror("bind failed"); 
-        exit(EXIT_FAILURE); 
+    int true = 1;
+    setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &true, sizeof(int));
+
+    if (bind(sd, (struct sockaddr *)&server, sizeof(server)) < 0) {
+        perror("bind failed");
+        exit(EXIT_FAILURE);
     }
+
     listen(sd, 5);
 
     printf("Waiting for the client...\n");
@@ -92,12 +135,10 @@ int main() {
     clientLen = sizeof(client);
 
     while (1) {
-        nsd = accept(sd, (struct sockaddr *)&client, &clientLen);
-        struct Connection *connection = (struct Connection *) malloc(sizeof(struct Connection));
-        connection->nsd = nsd;
-        connection->connectionId = connectionCount;
-        connections[connectionCount++] = nsd;
-        if (pthread_create(&threads, NULL, connection_handler, (void *)connection) < 0) {
+        int *nsd = malloc(sizeof(int));
+        *nsd = accept(sd, (struct sockaddr *)&client, &clientLen);
+        if (pthread_create(&threads, NULL, connection_handler, (void *)nsd) <
+            0) {
             perror("pthread_create()");
             exit(0);
         }
