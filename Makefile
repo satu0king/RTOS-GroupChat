@@ -17,10 +17,10 @@ testRig: $(BIN)/testRig
 	mkdir log
 
 $(BIN)/testRig : server client $(BIN)/fort.o
-	gcc $(SRC)/testRig.c $(BIN)/fort.o -o $(BIN)/testRig -I $(INCLUDE)
+	gcc $(SRC)/testRig.c -lpthread  $(BIN)/fort.o -o $(BIN)/testRig -I $(INCLUDE)
 
-$(BIN)/client: $(SRC)/client.c $(INCLUDE)/messages.h
-	gcc $(SRC)/client.c -o $(BIN)/client -I $(INCLUDE)
+$(BIN)/client: $(SRC)/client.c $(INCLUDE)/messages.h $(INCLUDE)/ntp.h
+	gcc $(SRC)/client.c -lpthread -o $(BIN)/client -I $(INCLUDE)
 
 $(BIN)/fort.o: $(SRC)/fort.c $(INCLUDE)/fort.h
 	gcc $(SRC)/fort.c -c -o $(BIN)/fort.o -I $(INCLUDE)

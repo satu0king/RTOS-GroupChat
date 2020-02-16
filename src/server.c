@@ -82,9 +82,9 @@ void *connection_handler(void *_connection) {
 
     write(nsfd, &response, sizeof(response));
 
-    printf(
-        "Client %s joined the chat, ID assigned: %d, Group Id Assigned: %d\n",
-        name, response.id, response.groupId);
+    // printf(
+    //     "Client %s joined the chat, ID assigned: %d, Group Id Assigned: %d\n",
+    //     name, response.id, response.groupId);
 
     struct Message message;
     while (read(nsfd, &message, sizeof(message))) {
@@ -95,7 +95,7 @@ void *connection_handler(void *_connection) {
         }
     }
 
-    printf("%s with connection ID %d has left the chat\n", name, id);
+    // printf("%s with connection ID %d has left the chat\n", name, id);
     connections[groupId][id] = -1;
     free(_connection);
     return NULL;
@@ -130,7 +130,7 @@ int main(int argc, char *argv[]) {
 
     listen(sd, 5);
 
-    printf("Waiting for the client...\n");
+    // printf("Waiting for the client...\n");
 
     clientLen = sizeof(client);
 
@@ -142,7 +142,7 @@ int main(int argc, char *argv[]) {
             perror("pthread_create()");
             exit(0);
         }
-        printf("Connection Created\n");
+        // printf("Connection Created\n");
     }
 
     pthread_exit(NULL);

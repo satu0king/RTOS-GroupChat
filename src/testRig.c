@@ -10,6 +10,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include "fort.h"
 
 char *serverLocation;
@@ -138,17 +139,17 @@ unsigned long performTest(char *testName, int groupCount, int userCount,
 
     usleep(1000 * 1000);
     for (int i = 0; i < groupCount; i++) {
-        printf("Running Test %s with group %d: \n", testName, i + 1);
+        // printf("Running Test %s with group %d: \n", testName, i + 1);
         for (int j = 0; j < simultaneousUsers; j++) {
             kill(connections[i][j], SIGUSR1);
         }
     }
 
     // getchar();
-    usleep(1 * 1000 * 1000);
+    usleep(1000 * 1000);
     // signal(SIGQUIT, SIG_IGN);
     kill(serverPid, SIGQUIT);
-    // usleep(1000 * 1000);
+    usleep(1000 * 1000);
     for (int i = 0; i < groupCount; i++) {
         for (int j = 0; j < userCount; j++) {
             kill(connections[i][j], SIGQUIT);
@@ -169,12 +170,17 @@ unsigned long performTest(char *testName, int groupCount, int userCount,
             }
             // remove(logfile);
         }
-    printf("Average Delay: %lu\n", delaySum / count);
+    // printf("Average Delay: %lu\n", delaySum / count);
     return delaySum / count;
 }
 
-#define MAX_CLIENTS 10
+#define MAX_CLIENTS 25
 unsigned long delays[MAX_CLIENTS + 1][MAX_CLIENTS + 1];
+
+int min(int a, int b) {
+    if (a < b) return a;
+    return b;
+}
 
 int main(int argc, char *argv[]) {
     if (argc < 4) {
@@ -186,23 +192,29 @@ int main(int argc, char *argv[]) {
     clientLocation = argv[2];
     serverPort = argv[3];
 
+    char logfile[100];
+    sprintf(logfile, "Result - %d.txt", MAX_CLIENTS);
+    int logfileFd = open(logfile, O_CREAT | O_WRONLY, 0644);
+
     // performTest("Test", 1, 100, 100);
 
     for(int clients = 2; clients <= MAX_CLIENTS; clients++) {
-        for(int parallel = 1; parallel <= clients; parallel++) {
+        for(int parallel = 1; parallel <= min(clients, 5); parallel++) {
             char testName[100];
             sprintf(testName, "Test_%d_%d", clients, parallel);
             delays[clients][parallel] = performTest(testName, 1, clients, parallel);
+            printf("%d %d %lu\n", clients, parallel, delays[clients][parallel]);
         }
     }
 
      ft_table_t *table = ft_create_table();
 
     ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_ROW_TYPE, FT_ROW_HEADER);
+    ft_set_border_style(table, FT_SOLID_ROUND_STYLE);
     
     ft_write(table, "#clients \\ #parallel");
 
-    for(int clients = 1; clients <= MAX_CLIENTS; clients++) {
+    for(int clients = 1; clients <= min(MAX_CLIENTS, 5); clients++) {
         char header[20];
         sprintf(header, "%d", clients);
         ft_write(table, header);
@@ -213,7 +225,7 @@ int main(int argc, char *argv[]) {
         char cell[10];
             sprintf(cell, "%d", clients);
             ft_write(table, cell);
-        for(int parallel = 1; parallel <= clients; parallel++) {
+        for(int parallel = 1; parallel <= min(clients, 5); parallel++) {
             // printf("%05lu ", delays[clients][parallel]);
             char cell[10];
             sprintf(cell, "%lu", delays[clients][parallel]);
@@ -224,6 +236,7 @@ int main(int argc, char *argv[]) {
     }
 
     printf("%s\n", ft_to_string(table));
+    write(logfileFd, ft_to_string(table), strlen(ft_to_string(table)));
     ft_destroy_table(table);
     
 }

@@ -12,6 +12,7 @@
 #include <unistd.h>
 
 #include "messages.h"
+#include "ntp.h"
 
 int sd;
 struct Message message;
@@ -21,18 +22,14 @@ enum Mode { DEV, TEST, PROD };
 enum Mode mode = PROD;
 int logfileFD;
 
-struct timeval getTime() {
-    struct timeval timestamp;
-    gettimeofday(&timestamp, NULL);
-    return timestamp;
-}
 
 void killServer() {
     printf("Are you sure you want to close the client ? (Y/N) \n");
     char response;
     scanf("%c", &response);
     if (response == 'Y' || response == 'y') {
-        close(sd);
+        if(mode == TEST || mode == PROD) 
+            close(sd);
         if (mode == TEST) {
             close(logfileFD);
         }
@@ -46,7 +43,7 @@ void handle_my(int sig) {
             killServer();
             break;
         case SIGUSR1:
-            printf("I received a message\n");
+            if(mode!=TEST)printf("I received a message\n");
             strcpy(message.message, "This is a message!!\n");
             message.time = getTime();
             write(sd, &message, sizeof(message));
@@ -60,24 +57,26 @@ void *connection_handler(void *nsd) {
     struct Message message;
 
     while (read(nsfd, &message, sizeof(message))) {
-        printf("%s: %s", message.name, message.message);
-        if (mode == DEV || mode == TEST) {
-            struct timeval receiveTime = getTime();
-            struct timeval sendTime = message.time;
-            unsigned long delay =
-                (receiveTime.tv_sec - sendTime.tv_sec) * 1000000 +
-                receiveTime.tv_usec - sendTime.tv_usec;
-            printf("Delay: %lu\n", delay);
+        if(mode!=TEST)printf("%s: %s", message.name, message.message);
+         struct timeval receiveTime = getTime();
+        struct timeval sendTime = message.time;
+        unsigned long delay =
+            (receiveTime.tv_sec - sendTime.tv_sec) * 1000000 +
+            receiveTime.tv_usec - sendTime.tv_usec;
+        
+        if(mode == DEV)
+        printf("Delay: %ld\n", delay);
+           
             if (mode == TEST) {
                 // char log[100];
                 // sprintf(log, "%lu", delay);
                 write(logfileFD, &delay, sizeof(delay));
             }
-        }
+        
         fflush(stdout);
     }
 
-    printf("Disconnected from server\n");
+    // printf("Disconnected from server\n");
     exit(0);
     return NULL;
 }
@@ -104,6 +103,9 @@ int main(int argc, char *argv[]) {
             mode = DEV;
         }
     }
+    
+    if(mode == DEV) {runNTP();}
+    
 
     signal(SIGINT, handle_my);
     signal(SIGUSR1, handle_my);
@@ -137,7 +139,7 @@ int main(int argc, char *argv[]) {
     int connectionId = response.id;
     int groupId = response.groupId;
 
-    printf("Id assigned by server: %d\n", connectionId);
+    if(mode!=TEST)printf("Id assigned by server: %d\n", connectionId);
 
     if (pthread_create(&threads, NULL, connection_handler, (void *)&sd) < 0) {
         perror("pthread_create()");
