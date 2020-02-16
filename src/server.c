@@ -20,6 +20,8 @@ int connectionCount[MAX_GROUPS];
 int groupCount = 0;
 int sd;
 
+pthread_mutex_t newConnectionLock; 
+
 void killServer() {
     printf(
         "Are you sure you want to close the server ? All groups will be "
@@ -59,6 +61,8 @@ void *connection_handler(void *_connection) {
     int flag = 1;
     int groupId;
     int id;
+    
+    pthread_mutex_lock(&newConnectionLock);
     for (int i = 0; i < groupCount; i++) {
         if (!strcmp(groupName, groupNames[i])) {
             groupId = i;
@@ -76,6 +80,8 @@ void *connection_handler(void *_connection) {
         id = connectionCount[i]++;
         connections[groupId][id] = nsfd;
     }
+
+    pthread_mutex_unlock(&newConnectionLock);
 
     response.id = id;
     response.groupId = groupId;
@@ -112,6 +118,12 @@ int main(int argc, char *argv[]) {
     signal(SIGINT, handle_my);
     socklen_t clientLen;
     pthread_t threads;
+
+    if (pthread_mutex_init(&newConnectionLock, NULL) != 0) { 
+        perror("pthread_mutex_init()");
+        exit(EXIT_FAILURE);
+    } 
+
     struct sockaddr_in server, client;
 
     sd = socket(AF_INET, SOCK_STREAM, 0);

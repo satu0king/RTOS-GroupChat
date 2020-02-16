@@ -174,7 +174,7 @@ unsigned long performTest(char *testName, int groupCount, int userCount,
     return delaySum / count;
 }
 
-#define MAX_CLIENTS 25
+#define MAX_CLIENTS 5
 unsigned long delays[MAX_CLIENTS + 1][MAX_CLIENTS + 1];
 
 int min(int a, int b) {
