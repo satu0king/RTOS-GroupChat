@@ -143,7 +143,7 @@ void *messageDeliver(void *v) {
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
-        printf("Usage: %s <port> [mode]", argv[0]);
+        printf("Usage: %s <port> [mode]\n", argv[0]);
         exit(EXIT_FAILURE);
     }
 

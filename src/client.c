@@ -86,7 +86,7 @@ int main(int argc, char *argv[]) {
     if (argc < 5) {
         printf(
             "Usage: %s <server ID> <server port> <user handle> <group handle> "
-            "[mode [logfile]]",
+            "[mode [logfile]]\n",
             argv[0]);
         exit(EXIT_FAILURE);
     }

@@ -189,7 +189,7 @@ int min(int a, int b) {
 int main(int argc, char *argv[]) {
     if (argc < 7) {
         printf(
-            "%s <server path> <client path> <serverPort> <groupCount> "
+            "usage: %s <server path> <client path> <serverPort> <groupCount> "
             "<clientCount> <parallel> \n",
             argv[0]);
         exit(EXIT_FAILURE);
