@@ -7,7 +7,7 @@ SRC = ./src
 server: $(BIN)/server  
 	
 
-$(BIN)/server: $(SRC)/server.c $(INCLUDE)/messages.h
+$(BIN)/server: $(SRC)/server.c $(INCLUDE)/messages.h $(INCLUDE)/queue.h
 	gcc $(SRC)/server.c -o $(BIN)/server -I $(INCLUDE)
 
 client: $(BIN)/client  

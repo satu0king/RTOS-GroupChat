@@ -17,19 +17,22 @@
 int sd;
 struct Message message;
 
-enum Mode { DEV, TEST, PROD };
-
 enum Mode mode = PROD;
 int logfileFD;
+pthread_t receiver_thread;
 
-
-void killServer() {
-    printf("Are you sure you want to close the client ? (Y/N) \n");
+void killClient() {
     char response;
-    scanf("%c", &response);
+    if (mode != TEST) {
+        printf("Are you sure you want to close the client ? (Y/N) \n");
+
+        scanf("%c", &response);
+    } else
+        response = 'y';
+
     if (response == 'Y' || response == 'y') {
-        if(mode == TEST || mode == PROD) 
-            close(sd);
+        pthread_kill(receiver_thread, SIGINT);
+        close(sd);
         if (mode == TEST) {
             close(logfileFD);
         }
@@ -40,10 +43,10 @@ void killServer() {
 void handle_my(int sig) {
     switch (sig) {
         case SIGINT:
-            killServer();
+            killClient();
             break;
         case SIGUSR1:
-            if(mode!=TEST)printf("I received a message\n");
+            if (mode != TEST) printf("I received a message\n");
             strcpy(message.message, "This is a message!!\n");
             message.time = getTime();
             write(sd, &message, sizeof(message));
@@ -57,26 +60,23 @@ void *connection_handler(void *nsd) {
     struct Message message;
 
     while (read(nsfd, &message, sizeof(message))) {
-        if(mode!=TEST)printf("%s: %s", message.name, message.message);
-         struct timeval receiveTime = getTime();
+        if (mode != TEST) printf("%s: %s", message.name, message.message);
+        struct timeval receiveTime = getTime();
         struct timeval sendTime = message.time;
-        unsigned long delay =
-            (receiveTime.tv_sec - sendTime.tv_sec) * 1000000 +
-            receiveTime.tv_usec - sendTime.tv_usec;
-        
-        if(mode == DEV)
-        printf("Delay: %ld\n", delay);
-           
-            if (mode == TEST) {
-                // char log[100];
-                // sprintf(log, "%lu", delay);
-                write(logfileFD, &delay, sizeof(delay));
-            }
-        
+        unsigned long delay = (receiveTime.tv_sec - sendTime.tv_sec) * 1000000 +
+                              receiveTime.tv_usec - sendTime.tv_usec;
+
+        if (mode == DEV)
+            printf("Delay: %ld\n", delay);
+
+        else if (mode == TEST) {
+            write(logfileFD, &delay, sizeof(delay));
+        }
+
         fflush(stdout);
     }
 
-    // printf("Disconnected from server\n");
+    if (mode != TEST) printf("Disconnected from server\n");
     exit(0);
     return NULL;
 }
@@ -103,15 +103,13 @@ int main(int argc, char *argv[]) {
             mode = DEV;
         }
     }
-    
-    if(mode == DEV) {runNTP();}
-    
+
+    if (mode == DEV) runNTP();
 
     signal(SIGINT, handle_my);
     signal(SIGUSR1, handle_my);
 
     struct sockaddr_in server, client;
-    pthread_t threads;
 
     int IP = inet_addr(argv[1]);  // INADDR_ANY;
 
@@ -139,9 +137,10 @@ int main(int argc, char *argv[]) {
     int connectionId = response.id;
     int groupId = response.groupId;
 
-    if(mode!=TEST)printf("Id assigned by server: %d\n", connectionId);
+    if (mode != TEST) printf("Id assigned by server: %d\n", connectionId);
 
-    if (pthread_create(&threads, NULL, connection_handler, (void *)&sd) < 0) {
+    if (pthread_create(&receiver_thread, NULL, connection_handler,
+                       (void *)&sd) < 0) {
         perror("pthread_create()");
         exit(EXIT_FAILURE);
     }
@@ -156,9 +155,6 @@ int main(int argc, char *argv[]) {
         message.time = getTime();
         write(sd, &message, sizeof(message));
     }
-
-    // fgets(message.message, sizeof(message.message), stdin); // some hack to
-    // remove trailing spaces
 
     while (1) {
         fgets(message.message, sizeof(message.message), stdin);

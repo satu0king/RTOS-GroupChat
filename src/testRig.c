@@ -148,11 +148,11 @@ unsigned long performTest(char *testName, int groupCount, int userCount,
     // getchar();
     usleep(1000 * 1000);
     // signal(SIGQUIT, SIG_IGN);
-    kill(serverPid, SIGQUIT);
+    kill(serverPid, SIGKILL);
     usleep(1000 * 1000);
     for (int i = 0; i < groupCount; i++) {
         for (int j = 0; j < userCount; j++) {
-            kill(connections[i][j], SIGQUIT);
+            kill(connections[i][j], SIGKILL);
         }
     }
 
@@ -174,7 +174,7 @@ unsigned long performTest(char *testName, int groupCount, int userCount,
     return delaySum / count;
 }
 
-#define MAX_CLIENTS 5
+#define MAX_CLIENTS 100
 unsigned long delays[MAX_CLIENTS + 1][MAX_CLIENTS + 1];
 
 int min(int a, int b) {
