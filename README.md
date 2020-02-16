@@ -63,7 +63,7 @@ The test rig runs stress tests by creating multiple processes and clients. The r
 Attempts were made to fully populate a 100 x 100 matrix of #clients and #parallelism. However, due to some undiagonized issues, the tests were failing sometimes by not successfully closing servers and clients. This was very disappointing. However, Smaller tests and independent tests all ran successfully. 
 
 ## Results 
-The results show a clear increase in the average delay with increase in #clients and #parallelism. However, all delays are in microseconds as they are on the same host. Another observation is that the same test varied signigificantlly in delay between runs. This might be due to external factors such as variables like context switching overhead and thread synchronization over head or simply because of different scheduling by the host system. Note in a real test across processes on different hosts, the network delay exceeds all these variables.
+The results show a clear increase in the average delay with increase in #clients and #parallelism. However, all delays are in microseconds as they are on the same host. Another observation is that the same test varied signigificantlly in delay between runs. This might be due to external factors such as variables like context switching overhead and thread synchronization overhead or simply because of differences scheduling by the host system influencing the delay. Note in a real test across processes on different hosts, the network delay exceeds all these variables. To mitigate the issue, delays were computed by averaging delay across multiple test runs.
 
 ### Single client test
 
@@ -150,6 +150,7 @@ The results show a clear increase in the average delay with increase in #clients
 
 
 ### Automated Results 
+> Note: Library Libfort was used for pretty printing the tables 
 ```
 ┌──────────────────────┬─────┬─────┬─────┬─────┬──────┬─────┬─────┬─────┬─────┬──────┐
 │ #clients \ #parallel │ 1   │ 2   │ 3   │ 4   │ 5    │ 6   │ 7   │ 8   │ 9   │ 10   │
@@ -196,3 +197,22 @@ The results show a clear increase in the average delay with increase in #clients
 │ 25                   │ 396 │ 751  │ 984  │ 986  │ 917  │
 ╰──────────────────────┴─────┴──────┴──────┴──────┴──────╯
 ```
+
+## Conclusion 
+In this assignment we have successfully developed a group chat system. We analyzed the performance of the system as the number of users and messages increases. We have learnt and used multithreading, several form of IPC including mutexes, socket communication and signals. Some important newly learnt concepts include producer-consumer model and time synchronization via NTP. 
+
+## References and Resources used 
+* [ Network Time Protocol Version 4: Protocol and Algorithms Specification (RFC5905)](https://tools.ietf.org/html/rfc5905)
+* [ NTP Reference Implementation in C](https://lettier.github.io/posts/2016-04-26-lets-make-a-ntp-client-in-c.html)
+* [ Libfort -  Pretty Print Library for tables](https://github.com/seleznevae/libfort)
+* [Producer Consumer Pthread Implementation](https://classroom.udacity.com/courses/ud923/lessons/3155139407/concepts/34558787160923)
+### Man Page References 
+* [pthreads](http://man7.org/linux/man-pages/man7/pthreads.7.html)
+* [pthread create](http://man7.org/linux/man-pages/man3/pthread_create.3.html)
+* [pthread mutex lock](https://linux.die.net/man/3/pthread_mutex_lock)
+* [pthread cond wait](https://linux.die.net/man/3/pthread_cond_wait)
+* [sockets](http://man7.org/linux/man-pages/man2/socket.2.html)
+* [fork](http://man7.org/linux/man-pages/man2/fork.2.html)
+* [execlp](https://linux.die.net/man/3/execlp)
+* [gettimeofday](http://man7.org/linux/man-pages/man2/gettimeofday.2.html)
+* [signal](http://man7.org/linux/man-pages/man7/signal.7.html)
