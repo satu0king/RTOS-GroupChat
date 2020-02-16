@@ -12,9 +12,9 @@
 #include "messages.h"
 #include "queue.h"
 
-#define MAX_GROUPS 5
+#define MAX_GROUPS 10
 #define MAX_GROUP_SIZE 200
-#define MESSAGE_QUEUE_SIZE 10000
+#define MESSAGE_QUEUE_SIZE 10
 
 int connections[MAX_GROUPS][MAX_GROUP_SIZE];
 char groupNames[MAX_GROUPS][20];
@@ -135,7 +135,7 @@ void *messageDeliver(void *v) {
             }
         }
         pthread_mutex_unlock(&messageLock);
-        pthread_cond_signal(&c_cons);
+        pthread_cond_signal(&c_prod);
     }
     return NULL;
 }

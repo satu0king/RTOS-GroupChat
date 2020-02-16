@@ -12,11 +12,11 @@ $(BIN)/server: $(SRC)/server.c $(INCLUDE)/messages.h $(INCLUDE)/queue.h
 
 client: $(BIN)/client  
 
-testRig: $(BIN)/testRig 
+testRig: $(BIN)/testRig server client 
 	rm -rf log
 	mkdir log
 
-$(BIN)/testRig : server client $(BIN)/fort.o
+$(BIN)/testRig: $(BIN)/fort.o $(SRC)/testRig.c
 	gcc $(SRC)/testRig.c -lpthread  $(BIN)/fort.o -o $(BIN)/testRig -I $(INCLUDE)
 
 $(BIN)/client: $(SRC)/client.c $(INCLUDE)/messages.h $(INCLUDE)/ntp.h

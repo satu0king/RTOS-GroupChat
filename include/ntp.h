@@ -192,7 +192,6 @@ void runNTP() {
     double conversion = (double)(1000 * 1000 ) / ((unsigned long)(1) << 31);
     time_t txTm_s = (time_t)(packet.txTm_s - NTP_TIMESTAMP_DELTA);
     time_t txTm_f = packet.txTm_f * conversion;
-    printf("%ld: %ld\n",txTm_s, txTm_f);
 
     secondOffset = txTm_s - tv.tv_sec;
     usecondOffset = txTm_f - tv.tv_usec;

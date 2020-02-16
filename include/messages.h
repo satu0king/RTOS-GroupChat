@@ -10,8 +10,6 @@ struct JoinResponse{
     int groupId;
 };
 
-enum Mode { DEV, TEST, PROD };
-
 struct Message {
     int id;
     int groupId;
@@ -20,4 +18,5 @@ struct Message {
     char message[200];
 };
 
+enum Mode { DEV, TEST, PROD };
 

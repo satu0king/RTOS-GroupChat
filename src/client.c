@@ -104,7 +104,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    if (mode == DEV) runNTP();
+    // if (mode == DEV) runNTP();
 
     signal(SIGINT, handle_my);
     signal(SIGUSR1, handle_my);
