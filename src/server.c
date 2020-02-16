@@ -14,7 +14,7 @@
 
 #define MAX_GROUPS 10
 #define MAX_GROUP_SIZE 200
-#define MESSAGE_QUEUE_SIZE 10
+#define MESSAGE_QUEUE_SIZE 10000
 
 int connections[MAX_GROUPS][MAX_GROUP_SIZE];
 char groupNames[MAX_GROUPS][20];
@@ -184,7 +184,7 @@ int main(int argc, char *argv[]) {
 
     listen(sd, 5);
 
-    // printf("Waiting for the client...\n");
+    if(mode == DEV) printf("Waiting for the client...\n");
 
     clientLen = sizeof(client);
 
@@ -196,7 +196,7 @@ int main(int argc, char *argv[]) {
             perror("pthread_create()");
             exit(0);
         }
-        // printf("Connection Created\n");
+        if(mode == DEV) printf("Connection Created\n");
     }
 
     pthread_exit(NULL);
