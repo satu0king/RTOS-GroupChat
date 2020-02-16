@@ -2,6 +2,7 @@
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <pthread.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -184,7 +185,7 @@ int main(int argc, char *argv[]) {
 
     listen(sd, 5);
 
-    if(mode == DEV) printf("Waiting for the client...\n");
+    if (mode == DEV) printf("Waiting for the client...\n");
 
     clientLen = sizeof(client);
 
@@ -196,7 +197,7 @@ int main(int argc, char *argv[]) {
             perror("pthread_create()");
             exit(0);
         }
-        if(mode == DEV) printf("Connection Created\n");
+        if (mode == DEV) printf("Connection Created\n");
     }
 
     pthread_exit(NULL);
