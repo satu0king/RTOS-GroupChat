@@ -60,10 +60,10 @@ In order to meassure the performance of the system, a message delay metric was a
 ## Test Rig 
 The test rig runs stress tests by creating multiple processes and clients. The rig is fully automated and creates and closes the different processes between tests. The rig forces messages to be sent by the client by sending a signal to the client processes which then triggers a message. The clients in turn log the delays computed on receiving a message on to a designated log file. The test rig finally processes all the log files and computes the average delay.  
 
-Attempts were made to fully populate a 100 x 100 matrix of #clients and #parallelism. However, due to some undiagonized issues, the tests were failing sometimes by not successfully closing servers and clients. This was very disappointing. However, Smaller tests and independent tests all ran successfully. 
+Attempts were made to fully populate a 100 x 100 matrix of #clients and #parallelism. However, due to some undiagonized issues, the tests were failing sometimes by not successfully closing servers and clients. This was very disappointing. However, Smaller automated tests and independent large tests all ran successfully. 
 
 ## Results 
-The results show a clear increase in the average delay with increase in #clients and #parallelism. However, all delays are in microseconds as they are on the same host. Another observation is that the same test varied signigificantlly in delay between runs. This might be due to external factors such as variables like context switching overhead and thread synchronization overhead or simply because of differences scheduling by the host system influencing the delay. Note in a real test across processes on different hosts, the network delay exceeds all these variables. To mitigate the issue, delays were computed by averaging delay across multiple test runs.
+The results show a clear increase in the average delay with increase in #clients and #parallelism. However, all delays are in microseconds as they are on the same host. Another observation is that the same test varied significantly in delay between runs. This might be due to external factors such as variables like context switching overhead and thread synchronization overhead or simply because of differences scheduling by the host system influencing the delay. Note in a real test across processes on different hosts, the network delay exceeds all these variables. To mitigate the issue, delays were computed by averaging delay across multiple test runs.
 
 ### Single client test
 
