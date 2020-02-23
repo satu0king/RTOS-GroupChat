@@ -26,8 +26,10 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
-#include <time.h>
+#include <sys/time.h>
 #include <unistd.h>
+
+
 
 #define NTP_TIMESTAMP_DELTA 2208988800ull
 

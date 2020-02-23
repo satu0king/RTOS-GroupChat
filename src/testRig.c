@@ -19,9 +19,13 @@ char *serverPort;
 
 int serverPid = -1;
 
+// Helper macros to generate log file names
 #define LOG(logfile, testName, i, j) \
     sprintf(logfile, "log/%s_group%d_user%03d.log", testName, i + 1, j + 1)
 
+#define LOG_SERVER(logfile, testName) sprintf(logfile, "log/%s.log", testName)
+
+// Fake Names
 char *randomNames[] = {
     "Rishabh",  "Vaibhav",   "Shekhar",      "Simran",        "Sunny",
     "Aryan",    "Anisha",    "Gokul",        "N.Priyanka",    "Priya",
@@ -64,120 +68,26 @@ char *randomNames[] = {
     "Shivam",   "Krithika",  "Pavithra",     "Girish",        "Aashna",
     "Anish",    "Vinay",     "Atul",         "Kunal",         "Deep"};
 
+// Fake Group Names
 char *randomGroupNames[] = {"Emerald",  "Ruby", "Topaz",  "Saphire",
                             "Amethyst", "Jade", "Pearls", "Tanzanite"};
 
-void killServer() {
-    printf("Are you sure you want to close the client ? (Y/N) \n");
-    char response;
-    scanf("%c", &response);
-    if (response == 'Y' || response == 'y') {
-        kill(serverPid, SIGQUIT);
-        exit(EXIT_SUCCESS);
-    }
-}
+// Function to close resource handles and gracefully shutdown
+void killTest();
 
-void handle_my(int sig) {
-    switch (sig) {
-        case SIGINT:
-            killServer();
-            break;
-    }
-}
+// Interrupt handler
+void handle_my(int sig);
 
-int createServer() {
-    int pid;
-    if ((pid = fork()))
-        return pid;
-    else {
-        if (execlp(serverLocation, serverLocation, serverPort, NULL) == -1) {
-            perror("execl()");
-            exit(EXIT_FAILURE);
-        }
-    }
-    return -1;
-}
+// Launch a server on a new process in test mode
+int createServer(char *logfile);
 
-int createClient(char *user, char *group, char *logfile) {
-    int pid;
-    if ((pid = fork()))
-        return pid;
-    else {
-        // close(0);
-        // close(1);
-        if (execlp(clientLocation, clientLocation, "127.0.0.1", serverPort,
-                   user, group, "TEST", logfile, NULL) == -1) {
-            perror("execlp()");
-            exit(EXIT_FAILURE);
-        }
-    }
-    return -1;
-}
+// Launch a client on a new process in test mode
+int createClient(char *user, char *group, char *logfile);
 
+// Run Test - create and launch server and clients and make clients to send
+// messages parallely
 unsigned long performTest(char *testName, int groupCount, int userCount,
-                          int simultaneousUsers) {
-    if ((serverPid = createServer()) < 0) {
-        perror("createServer");
-        exit(EXIT_FAILURE);
-    }
-
-    int connections[groupCount][userCount];
-    char groupNames[groupCount][20];
-
-    for (int i = 0; i < groupCount; i++)
-        for (int j = 0; j < userCount; j++) {
-            usleep(20 * 1000);
-            char logfile[100];
-            LOG(logfile, testName, i, j);
-            connections[i][j] = createClient(randomNames[i * userCount + j],
-                                             randomGroupNames[i], logfile);
-            if (connections[i][j] < 0) {
-                perror("createClient");
-                exit(EXIT_FAILURE);
-            }
-        }
-
-    usleep(1000 * 1000);
-    for (int i = 0; i < groupCount; i++) {
-        // printf("Running Test %s with group %d: \n", testName, i + 1);
-        for (int j = 0; j < simultaneousUsers; j++) {
-            kill(connections[i][j], SIGUSR1);
-        }
-    }
-
-    // getchar();
-    usleep(1000 * 1000);
-    // signal(SIGQUIT, SIG_IGN);
-    kill(serverPid, SIGKILL);
-    usleep(1000 * 1000);
-    for (int i = 0; i < groupCount; i++) {
-        for (int j = 0; j < userCount; j++) {
-            kill(connections[i][j], SIGKILL);
-        }
-    }
-
-    unsigned long delaySum = 0;
-    int count = 0;
-    for (int i = 0; i < groupCount; i++)
-        for (int j = 0; j < userCount; j++) {
-            char logfile[100];
-            LOG(logfile, testName, i, j);
-            int fd = open(logfile, O_RDONLY);
-            unsigned long temp;
-            while (read(fd, &temp, sizeof(temp))) {
-                delaySum += temp;
-                count++;
-            }
-        }
-
-    if (count != groupCount * simultaneousUsers * (userCount - 1)) {
-        printf("Messages are getting dropped.\nExpected: %d\nReceived: %d\n",
-               groupCount * simultaneousUsers * (userCount - 1), count);
-    }
-    // printf("Average Delay: %lu\n", delaySum / count);
-    return delaySum / count;
-}
-
+                          int simultaneousUsers);
 #define MAX_CLIENTS 100
 unsigned long delays[MAX_CLIENTS + 1][MAX_CLIENTS + 1];
 
@@ -254,4 +164,136 @@ int main(int argc, char *argv[]) {
     // printf("%s\n", ft_to_string(table));
     // write(logfileFd, ft_to_string(table), strlen(ft_to_string(table)));
     // ft_destroy_table(table);
+}
+
+// Function to close resource handles and gracefully shutdown
+void killTest() {
+    printf("Are you sure you want to close the client ? (Y/N) \n");
+    char response[10];
+    scanf("%s", response);
+    if (response[0] == 'Y' || response[0] == 'y') {
+        kill(serverPid, SIGQUIT);
+        exit(EXIT_SUCCESS);
+    }
+}
+
+// Interrupt handler
+void handle_my(int sig) {
+    switch (sig) {
+        case SIGINT:
+            killTest();
+            break;
+    }
+}
+
+// Launch a server on a new process in test mode
+int createServer(char *logfile) {
+    int pid;
+    if ((pid = fork()))
+        return pid;
+    else {
+        if (execlp(serverLocation, serverLocation, serverPort, "TEST", logfile,
+                   NULL) == -1) {
+            perror("execl()");
+            exit(EXIT_FAILURE);
+        }
+    }
+    return -1;
+}
+
+// Launch a client on a new process in test mode
+int createClient(char *user, char *group, char *logfile) {
+    int pid;
+    if ((pid = fork()))
+        return pid;
+    else {
+        if (execlp(clientLocation, clientLocation, "127.0.0.1", serverPort,
+                   user, group, "TEST", logfile, NULL) == -1) {
+            perror("execlp()");
+            exit(EXIT_FAILURE);
+        }
+    }
+    return -1;
+}
+
+// Run Test
+unsigned long performTest(char *testName, int groupCount, int userCount,
+                          int simultaneousUsers) {
+    char serverLogFile[100];
+    LOG_SERVER(serverLogFile, testName);
+    if ((serverPid = createServer(serverLogFile)) < 0) {
+        perror("createServer");
+        exit(EXIT_FAILURE);
+    }
+
+    int connections[groupCount][userCount];
+    char groupNames[groupCount][20];
+
+    for (int i = 0; i < groupCount; i++)
+        for (int j = 0; j < userCount; j++) {
+            usleep(20 * 1000);
+            char logfile[100];
+            LOG(logfile, testName, i, j);
+            connections[i][j] = createClient(randomNames[i * userCount + j],
+                                             randomGroupNames[i], logfile);
+            if (connections[i][j] < 0) {
+                perror("createClient");
+                exit(EXIT_FAILURE);
+            }
+        }
+
+    usleep(1000 * 1000);
+    for (int i = 0; i < groupCount; i++) {
+        // printf("Running Test %s with group %d: \n", testName, i + 1);
+        for (int j = 0; j < simultaneousUsers; j++) {
+            kill(connections[i][j], SIGUSR1);
+        }
+    }
+
+    // getchar();
+    usleep(1000 * 1000);
+    // signal(SIGQUIT, SIG_IGN);
+    kill(serverPid, SIGKILL);
+    usleep(1000 * 1000);
+    for (int i = 0; i < groupCount; i++) {
+        for (int j = 0; j < userCount; j++) {
+            kill(connections[i][j], SIGKILL);
+        }
+    }
+
+    unsigned long delaySum = 0;
+    int count = 0;
+    for (int i = 0; i < groupCount; i++)
+        for (int j = 0; j < userCount; j++) {
+            char logfile[100];
+            LOG(logfile, testName, i, j);
+            int fd = open(logfile, O_RDONLY);
+            unsigned long temp;
+            while (read(fd, &temp, sizeof(temp))) {
+                delaySum += temp;
+                count++;
+            }
+        }
+    unsigned long serverDelaySum = 0;
+    int serverCount = 0;
+    int fd = open(serverLogFile, O_RDONLY);
+    unsigned long temp;
+    while (read(fd, &temp, sizeof(temp))) {
+        serverDelaySum += temp;
+        serverCount++;
+    }
+
+    if (serverCount != simultaneousUsers) {
+        printf("Messages are not delivered.\nExpected: %d\nReceived: %d\n",
+               simultaneousUsers, serverCount);
+    }
+
+    if (count != groupCount * simultaneousUsers * (userCount - 1)) {
+        printf("Messages are getting dropped.\nExpected: %d\nReceived: %d\n",
+               groupCount * simultaneousUsers * (userCount - 1), count);
+    }
+    printf("Average Server Delay: %lu\n", serverDelaySum / serverCount);
+    printf("Average Client Delay: %lu\n", delaySum / count);
+
+    return delaySum / count;
 }
